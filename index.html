@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>RupeeLedger — Personal Expense & Splitwise PWA</title>
+    <meta
+      name="description"
+      content="Offline-first personal expense tracker, live multi-account ledger (UPI, UPI Lite, Cash), and peer-to-peer bill splitting PWA."
+    />
+    <meta property="og:title" content="RupeeLedger — Personal Expense & Splitwise PWA" />
+    <meta
+      property="og:description"
+      content="Offline-first personal expense tracker, live multi-account ledger (UPI, UPI Lite, Cash), and peer-to-peer bill splitting PWA."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#09090B" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RupeeLedger" />
+
+    <!-- PWA Manifest & Icons (Relative paths for direct GitHub Pages hosting) -->
+    <link rel="manifest" href="./manifest.json" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='42' fill='%2309090B'/><rect x='8' y='8' width='176' height='176' rx='36' fill='%2318181B' stroke='%2327272A' stroke-width='4'/><path d='M62 54h68M62 82h68M94 54c18 0 30 10 30 28s-12 28-30 28H62l56 38' stroke='%2310B981' stroke-width='14' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>"
+    />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+
+    <!-- Google Fonts: Plus Jakarta Sans (UI) & JetBrains Mono (Tabular Currency) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS via CDN for Zero-Build GitHub Pages Deployment -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      if (window.tailwind) {
+        window.tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              fontFamily: {
+                sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+                mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace']
+              }
+            }
+          }
+        };
+      }
+    </script>
+
+    <!-- Lucide Icons via CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        background-color: #09090B;
+        color: #FAFAFA;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .tabular-nums {
+        font-variant-numeric: tabular-nums;
+      }
+      /* Hide default number input spinners for clean mobile entry */
+      input[type='number']::-webkit-inner-spin-button,
+      input[type='number']::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type='number'] {
+        -moz-appearance: textfield;
+      }
+    </style>
+  </head>
+
+  <body class="bg-[#09090B] text-[#FAFAFA] min-h-screen antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+    <!-- Mobile-First Centered Container (max-w-480px on desktop, full bleed on mobile) -->
+    <div class="max-w-[480px] mx-auto min-h-screen bg-[#09090B] sm:border-x border-[#27272A] flex flex-col relative pb-24">
+      <!-- Top App Header -->
+      <header class="px-4 pt-4 pb-3 border-b border-[#27272A] flex items-center justify-between gap-4">
+        <a href="./" class="text-base font-bold tracking-tight text-[#FAFAFA] whitespace-nowrap shrink-0 flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-[#18181B] border border-[#27272A] inline-flex items-center justify-center text-[#10B981] font-mono text-sm font-bold">₹</span>
+          <span>RupeeLedger</span>
+        </a>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- Offline Mode Indicator (Shown automatically when navigator.onLine is false) -->
+          <span
+            id="offline-status-badge"
+            class="hidden text-[11px] font-medium text-amber-400 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 whitespace-nowrap"
+          >
+            Offline Ready
+          </span>
+
+          <!-- In-App PWA Install Button (Shown when installable or on iOS) -->
+          <button
+            type="button"
+            id="header-install-btn"
+            class="hidden min-h-[36px] px-2.5 py-1 rounded-lg bg-[#18181B] hover:bg-zinc-800 border border-[#27272A] text-xs font-medium text-zinc-200 whitespace-nowrap shrink-0 transition-colors"
+          >
+            Install App
+          </button>
+
+          <!-- Primary Header Quick Action: 1-Tap Transfer -->
+          <button
+            type="button"
+            id="header-transfer-btn"
+            data-action="quick-transfer"
+            class="min-h-[36px] px-3 py-1.5 rounded-lg bg-[#18181B] hover:bg-zinc-800 border border-[#27272A] text-xs font-semibold text-[#10B981] whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-colors"
+          >
+            <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i>
+            <span>1-Tap Transfer</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Dynamic Tab View Container -->
+      <main id="app-view-container" class="flex-1 px-4 pt-4">
+        <!-- Populated synchronously by ./app.js -->
+      </main>
+
+      <!-- Toast Feedback Banner -->
+      <div
+        id="toast-banner"
+        role="status"
+        aria-live="polite"
+        class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-zinc-800/95 border border-zinc-700 text-xs font-semibold text-[#FAFAFA] shadow-xl transition-all duration-150 whitespace-nowrap"
+      ></div>
+
+      <!-- Fixed Bottom Navigation Bar with Prominent Center '+' FAB -->
+      <nav
+        aria-label="Primary Bottom Navigation"
+        class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40 bg-[#09090B]/95 backdrop-blur-md border-t border-[#27272A] px-2 h-16 grid grid-cols-5 items-center"
+      >
+        <button
+          type="button"
+          data-nav-tab="home"
+          aria-label="Home Dashboard"
+          class="flex flex-col items-center justify-center min-h-[48px] px-2 text-emerald-400 font-semibold transition-colors"
+        >
+          <i data-lucide="wallet" class="w-5 h-5"></i>
+          <span class="text-[10px] mt-1 whitespace-nowrap">Home</span>
+        </button>
+
+        <button
+          type="button"
+          data-nav-tab="friends"
+          aria-label="Friends Splitwise"
+          class="flex flex-col items-center justify-center min-h-[48px] px-2 text-zinc-400 hover:text-zinc-200 transition-colors"
+        >
+          <i data-lucide="users" class="w-5 h-5"></i>
+          <span class="text-[10px] mt-1 whitespace-nowrap">Friends</span>
+        </button>
+
+        <!-- Center Prominent '+' Floating Action Button (FAB) -->
+        <div class="flex items-center justify-center">
+          <button
+            type="button"
+            id="fab-add-btn"
+            aria-label="Add Expense, Split, or Transfer"
+            class="w-12 h-12 -mt-4 rounded-2xl bg-[#10B981] hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20 flex items-center justify-center active:scale-95 transition-transform"
+          >
+            <i data-lucide="plus" class="w-6 h-6 stroke-[2.5]"></i>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          data-nav-tab="analytics"
+          aria-label="Monthly Analytics"
+          class="flex flex-col items-center justify-center min-h-[48px] px-2 text-zinc-400 hover:text-zinc-200 transition-colors"
+        >
+          <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+          <span class="text-[10px] mt-1 whitespace-nowrap">Analytics</span>
+        </button>
+
+        <button
+          type="button"
+          data-nav-tab="settings"
+          aria-label="Settings and Backup"
+          class="flex flex-col items-center justify-center min-h-[48px] px-2 text-zinc-400 hover:text-zinc-200 transition-colors"
+        >
+          <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+          <span class="text-[10px] mt-1 whitespace-nowrap">Settings</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Modal Containers -->
+    <div id="tx-modal-root" class="hidden"></div>
+    <div id="settle-modal-root" class="hidden"></div>
+    <div id="forgive-modal-root" class="hidden"></div>
+
+    <!-- Load Standalone Application Logic -->
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
